@@ -1,0 +1,64 @@
+name: CI
+# Au push sur la branch master, on va exécuter les jobs
+on:
+  push:
+    branches:
+      - master
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  build:
+    # On définit la plateforme sur laquelle on va exécuter le job
+    runs-on: ubuntu-latest
+    # Puis on va spécifier les étapes à exécuter
+    steps:
+      # Récupération du code
+      - name: Checkout code
+        uses: actions/checkout@v4
+      # Mon projet utilise pnpm, on va voir la doc https://pnpm.io/continuous-integration#github-actions
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+      # On va installer les dépendances
+      - name: Install dependencies
+        run: pnpm install
+      # Si on à des tests, un linter on l'exécute ici
+      - name: Run Linter
+        run: pnpm lint
+      # Si on est bon, on va builder le projet
+      - name: Build
+        run: pnpm build
+        # Dans le cas où on a un github pages public, il faut rajouter le nom du repo dans l'url de base
+        # On a ajouter une variable d'environnement BASE_URL dans la config vite (vite.config.ts)
+        env:
+          BASE_URL: /${{ github.event.repository.name }}
+
+      # Particularité, ici on veut mettre notre projet sur github pages
+      - name: Generate Github Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: build
+          # Récupère les fichiers statiques générés par le build situés dans le dossier dist
+          path: dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Github Pages
+        uses: actions/configure-pages@v4
+      - name: Deploy
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: build
