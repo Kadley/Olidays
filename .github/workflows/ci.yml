@@ -39,7 +39,7 @@ jobs:
         # Dans le cas où on a un github pages public, il faut rajouter le nom du repo dans l'url de base
         # On a ajouter une variable d'environnement BASE_URL dans la config vite (vite.config.ts)
         env:
-          BASE_URL: /${{ github.event.repository.name }}
+           BASE_URL: /Olidays/
 
       # Particularité, ici on veut mettre notre projet sur github pages
       - name: Generate Github Pages Artifact
